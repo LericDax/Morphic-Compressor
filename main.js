@@ -201,24 +201,30 @@ async function runMergeQueue(jobs, workingDir) {
 ipcMain.handle('pick-files', async () => {
 
   const browserWindow = getDialogParent();
-  const result = await dialog.showOpenDialog(browserWindow ?? undefined, {
+  const options = {
 
     title: 'Pick one or more .glb files',
     filters: [{ name: 'GLB', extensions: ['glb'] }],
     properties: ['openFile', 'multiSelections'],
-  });
+  };
+  const result = browserWindow
+    ? await dialog.showOpenDialog(browserWindow, options)
+    : await dialog.showOpenDialog(options);
   return result.canceled ? [] : result.filePaths;
 });
 
 ipcMain.handle('pick-output-dir', async () => {
 
   const browserWindow = getDialogParent();
-  const result = await dialog.showOpenDialog(browserWindow ?? undefined, {
+  const options = {
     title: 'Choose output folder',
     defaultPath: store.get('lastOutputDir', undefined),
 
     properties: ['openDirectory', 'createDirectory'],
-  });
+  };
+  const result = browserWindow
+    ? await dialog.showOpenDialog(browserWindow, options)
+    : await dialog.showOpenDialog(options);
   const dir = result.canceled ? null : result.filePaths[0];
   if (dir) {
     store.set('lastOutputDir', dir);
@@ -229,12 +235,15 @@ ipcMain.handle('pick-output-dir', async () => {
 
 ipcMain.handle('pick-work-dir', async () => {
   const browserWindow = getDialogParent();
-  const result = await dialog.showOpenDialog(browserWindow ?? undefined, {
+  const options = {
     title: 'Choose working folder',
     defaultPath: store.get('workDir', process.cwd()),
 
     properties: ['openDirectory', 'createDirectory'],
-  });
+  };
+  const result = browserWindow
+    ? await dialog.showOpenDialog(browserWindow, options)
+    : await dialog.showOpenDialog(options);
   const dir = result.canceled ? null : result.filePaths[0];
   if (dir) {
     store.set('workDir', dir);
