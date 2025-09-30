@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import Store from 'electron-store';
 
 const store = new Store({ name: 'settings' });
+const fsp = fs.promises;
 
 let mainWindow;
 let mergeInProgress = false;
@@ -84,6 +85,50 @@ function resolveGltfTransformCommand() {
 }
 
 
+
+async function runGltfTransformCommand({ jobId, args, workingDir, message }) {
+  const gltfTransformBin = resolveGltfTransformCommand();
+
+  if (message) {
+    sendToRenderer('merge-log', { jobId, type: 'info', text: message });
+  }
+
+  await new Promise((resolve, reject) => {
+    const child = spawn(gltfTransformBin, args, {
+      cwd: workingDir ?? process.cwd(),
+      env: { ...process.env },
+      shell: process.platform === 'win32',
+    });
+
+    if (child.stdout) {
+      child.stdout.on('data', (chunk) => {
+        sendToRenderer('merge-log', { jobId, type: 'out', text: chunk.toString() });
+      });
+    }
+
+    if (child.stderr) {
+      child.stderr.on('data', (chunk) => {
+        sendToRenderer('merge-log', { jobId, type: 'err', text: chunk.toString() });
+      });
+    }
+
+    child.on('error', (err) => {
+      sendToRenderer('merge-log', { jobId, type: 'err', text: err.message });
+      reject(err);
+    });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        const error = new Error(`glTF-Transform exited with code ${code}`);
+        sendToRenderer('merge-log', { jobId, type: 'err', text: error.message });
+        reject(error);
+      }
+    });
+  });
+}
+
 function resolveWorkingDirectory() {
   const configured = store.get('workDir', null);
   if (!configured) {
@@ -119,16 +164,9 @@ async function runMergeJob(job, workingDir) {
     throw new Error(`Output directory does not exist: ${outputParent}`);
   }
 
-  const base = files[0];
-  const rest = files.slice(1);
-
-  const gltfTransformBin = resolveGltfTransformCommand();
   const cliArgs = [
     'merge',
-    base,
-    ...rest,
-    '--join',
-    '--output',
+    ...files,
     outputPath,
   ];
 
@@ -136,44 +174,49 @@ async function runMergeJob(job, workingDir) {
     ? transforms
     : ['dedup', 'prune'];
 
-  for (const transform of appliedTransforms) {
-    cliArgs.push('-t', transform);
-  }
-
   sendToRenderer('merge-status', { jobId: id, status: 'running', outputPath });
-  sendToRenderer('merge-log', { jobId: id, type: 'info', text: `Running glTF-Transform merge for ${path.basename(outputPath)}...` });
-
-  await new Promise((resolve, reject) => {
-    const child = spawn(gltfTransformBin, cliArgs, {
-
-      cwd: workingDir ?? process.cwd(),
-
-      env: { ...process.env },
-      shell: process.platform === 'win32',
-    });
-
-    child.stdout.on('data', (chunk) => {
-      sendToRenderer('merge-log', { jobId: id, type: 'out', text: chunk.toString() });
-    });
-
-    child.stderr.on('data', (chunk) => {
-      sendToRenderer('merge-log', { jobId: id, type: 'err', text: chunk.toString() });
-    });
-
-    child.on('error', (err) => {
-      sendToRenderer('merge-log', { jobId: id, type: 'err', text: err.message });
-      reject(err);
-    });
-
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        const error = new Error(`glTF-Transform exited with code ${code}`);
-        reject(error);
-      }
-    });
+  await runGltfTransformCommand({
+    jobId: id,
+    args: cliArgs,
+    workingDir,
+    message: `Running glTF-Transform merge for ${path.basename(outputPath)}...`,
   });
+
+  const transformsToRun = appliedTransforms
+    .map((value) => (typeof value === 'string' ? value.trim() : ''))
+    .filter((value) => value.length > 0);
+
+  for (let index = 0; index < transformsToRun.length; index += 1) {
+    const rawTransform = transformsToRun[index];
+    const tokens = rawTransform.split(/\s+/);
+    const [command, ...extraArgs] = tokens;
+
+    if (!command) {
+      continue;
+    }
+
+    const ext = path.extname(outputPath) || '.glb';
+    const baseName = path.basename(outputPath, ext);
+    const tempPath = path.join(path.dirname(outputPath), `${baseName}.tmp-${Date.now()}-${index}${ext}`);
+
+    await fsp.rm(tempPath, { force: true }).catch(() => {});
+
+    try {
+      await runGltfTransformCommand({
+        jobId: id,
+        args: [command, ...extraArgs, outputPath, tempPath],
+        workingDir,
+        message: `Applying glTF-Transform ${rawTransform} step...`,
+      });
+
+      await fsp.rm(outputPath, { force: true });
+      await fsp.rename(tempPath, outputPath);
+      sendToRenderer('merge-log', { jobId: id, type: 'info', text: `Applied glTF-Transform ${rawTransform}.` });
+    } catch (error) {
+      await fsp.rm(tempPath, { force: true }).catch(() => {});
+      throw error;
+    }
+  }
 
   sendToRenderer('merge-log', { jobId: id, type: 'info', text: `Finished job ${id}. Saved to ${outputPath}` });
   sendToRenderer('merge-status', { jobId: id, status: 'success', outputPath });
