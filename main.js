@@ -26,7 +26,8 @@ function getDialogParent() {
 
 
 function resolveRendererPath() {
-  return path.join(process.cwd(), 'renderer', 'index.html');
+  return path.join(app.getAppPath(), 'renderer', 'index.html');
+
 }
 
 async function createWindow() {
@@ -36,7 +37,9 @@ async function createWindow() {
     minWidth: 880,
     minHeight: 600,
     webPreferences: {
-      preload: path.join(process.cwd(), 'preload.js'),
+
+      preload: path.join(app.getAppPath(), 'preload.js'),
+
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -264,7 +267,6 @@ ipcMain.handle('start-merge', async (_e, jobs) => {
   if (!Array.isArray(jobs) || jobs.length === 0) {
     throw new Error('No jobs to merge.');
   }
-
 
   const workingDir = resolveWorkingDirectory();
 

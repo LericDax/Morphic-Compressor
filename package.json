@@ -7,8 +7,9 @@
   "type": "module",
   "scripts": {
     "start": "electron .",
-    "build": "echo \"Use electron-builder or forge if you want installers\"",
-    "postinstall": "patch-package || true"
+
+    "build": "echo \"Use electron-builder or forge if you want installers\""
+
   },
   "dependencies": {
     "@gltf-transform/cli": "^3.10.0",

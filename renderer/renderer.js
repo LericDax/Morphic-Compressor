@@ -373,6 +373,7 @@ function setupUi() {
   });
 
 
+
   if (chooseWorkingDirBtn) {
     chooseWorkingDirBtn.addEventListener('click', selectWorkingDir);
   }
@@ -388,7 +389,6 @@ function init() {
 
   (async () => {
     const lastOutputDir = await window.glbMerger.getPref('lastOutputDir', null);
-
     workingDir = await window.glbMerger.getPref('workDir', null);
     updateWorkingDirDisplay();
 

@@ -95,7 +95,6 @@ body::before {
   gap: 10px;
 }
 
-
 button {
   border: none;
   border-radius: var(--radius);
