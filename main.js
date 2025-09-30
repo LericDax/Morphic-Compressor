@@ -64,6 +64,7 @@ function getNpxCommand() {
   return 'npx';
 }
 
+
 function resolveWorkingDirectory() {
   const configured = store.get('workDir', null);
   if (!configured) {
@@ -82,6 +83,7 @@ function resolveWorkingDirectory() {
 }
 
 async function runMergeJob(job, workingDir) {
+
   const { id, files, outputDir, outputName, transforms } = job;
 
   if (!Array.isArray(files) || files.length === 0) {
@@ -125,7 +127,9 @@ async function runMergeJob(job, workingDir) {
 
   await new Promise((resolve, reject) => {
     const child = spawn(npxCmd, cliArgs, {
+
       cwd: workingDir ?? process.cwd(),
+
       env: { ...process.env },
     });
 
@@ -156,14 +160,18 @@ async function runMergeJob(job, workingDir) {
   sendToRenderer('merge-status', { jobId: id, status: 'success', outputPath });
 }
 
+
 async function runMergeQueue(jobs, workingDir) {
+
   for (const job of jobs) {
     sendToRenderer('merge-status', { jobId: job.id, status: 'pending' });
   }
 
   for (const job of jobs) {
     try {
+
       await runMergeJob(job, workingDir);
+
     } catch (err) {
       sendToRenderer('merge-log', { jobId: job.id, type: 'err', text: err?.message ?? String(err) });
       sendToRenderer('merge-status', { jobId: job.id, status: 'failed' });
@@ -192,6 +200,7 @@ ipcMain.handle('pick-output-dir', async () => {
   return dir;
 });
 
+
 ipcMain.handle('pick-work-dir', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: 'Choose working folder',
@@ -212,6 +221,7 @@ ipcMain.handle('clear-work-dir', async () => {
   return false;
 });
 
+
 ipcMain.handle('get-pref', async (_e, key, fallback) => {
   return store.get(key, fallback);
 });
@@ -229,6 +239,7 @@ ipcMain.handle('start-merge', async (_e, jobs) => {
     throw new Error('No jobs to merge.');
   }
 
+
   const workingDir = resolveWorkingDirectory();
 
   mergeInProgress = true;
@@ -237,6 +248,7 @@ ipcMain.handle('start-merge', async (_e, jobs) => {
 
   try {
     await runMergeQueue(jobs, workingDir);
+
     sendToRenderer('merge-log', { jobId: null, type: 'info', text: 'All merge jobs finished.' });
     return { ok: true };
   } catch (err) {

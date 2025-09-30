@@ -6,6 +6,7 @@ const logEl = $('#log');
 const clearLogBtn = $('#clearLogBtn');
 const addJobBtn = $('#addJobBtn');
 const mergeAllBtn = $('#mergeAllBtn');
+
 const workingDirDisplay = $('#workingDirDisplay');
 const chooseWorkingDirBtn = $('#chooseWorkingDirBtn');
 const clearWorkingDirBtn = $('#clearWorkingDirBtn');
@@ -13,6 +14,7 @@ const clearWorkingDirBtn = $('#clearWorkingDirBtn');
 let jobIdCounter = 1;
 let jobs = [];
 let workingDir = null;
+
 
 function makeJob(partial = {}) {
   return {
@@ -246,6 +248,7 @@ async function resetWorkingDir() {
   }
 }
 
+
 function jobIndex(jobId) {
   const idx = jobs.findIndex((j) => j.id === jobId);
   return idx >= 0 ? idx + 1 : null;
@@ -352,12 +355,14 @@ function setupUi() {
     logEl.textContent = '';
   });
 
+
   if (chooseWorkingDirBtn) {
     chooseWorkingDirBtn.addEventListener('click', selectWorkingDir);
   }
   if (clearWorkingDirBtn) {
     clearWorkingDirBtn.addEventListener('click', resetWorkingDir);
   }
+
 }
 
 function init() {
@@ -366,8 +371,10 @@ function init() {
 
   (async () => {
     const lastOutputDir = await window.glbMerger.getPref('lastOutputDir', null);
+
     workingDir = await window.glbMerger.getPref('workDir', null);
     updateWorkingDirDisplay();
+
     jobs.push(makeJob({ outputDir: lastOutputDir }));
     renderJobs();
   })();
