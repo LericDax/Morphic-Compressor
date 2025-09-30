@@ -72,14 +72,15 @@ function sendToRenderer(channel, payload) {
   mainWindow.webContents.send(channel, payload);
 }
 
-function getNpxCommand() {
-  if (process.platform === 'win32') {
-    return 'npx.cmd';
+function resolveGltfTransformCommand() {
+  const binName = process.platform === 'win32' ? 'gltf-transform.cmd' : 'gltf-transform';
+  const resolved = path.join(app.getAppPath(), 'node_modules', '.bin', binName);
+
+  if (!fs.existsSync(resolved)) {
+    throw new Error(`glTF-Transform CLI binary not found at ${resolved}`);
   }
-  if (process.platform === 'cygwin') {
-    return 'npx.cmd';
-  }
-  return 'npx';
+
+  return resolved;
 }
 
 
@@ -121,9 +122,8 @@ async function runMergeJob(job, workingDir) {
   const base = files[0];
   const rest = files.slice(1);
 
-  const npxCmd = getNpxCommand();
+  const gltfTransformBin = resolveGltfTransformCommand();
   const cliArgs = [
-    '@gltf-transform/cli',
     'merge',
     base,
     ...rest,
@@ -144,11 +144,12 @@ async function runMergeJob(job, workingDir) {
   sendToRenderer('merge-log', { jobId: id, type: 'info', text: `Running glTF-Transform merge for ${path.basename(outputPath)}...` });
 
   await new Promise((resolve, reject) => {
-    const child = spawn(npxCmd, cliArgs, {
+    const child = spawn(gltfTransformBin, cliArgs, {
 
       cwd: workingDir ?? process.cwd(),
 
       env: { ...process.env },
+      shell: process.platform === 'win32',
     });
 
     child.stdout.on('data', (chunk) => {
