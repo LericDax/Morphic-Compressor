@@ -64,7 +64,26 @@ function getNpxCommand() {
   return 'npx';
 }
 
-async function runMergeJob(job) {
+
+function resolveWorkingDirectory() {
+  const configured = store.get('workDir', null);
+  if (!configured) {
+    return process.cwd();
+  }
+
+  try {
+    const stats = fs.statSync(configured);
+    if (!stats.isDirectory()) {
+      throw new Error(`Configured working folder is not a directory: ${configured}`);
+    }
+    return configured;
+  } catch (error) {
+    throw new Error(`Configured working folder is not accessible: ${configured}. ${error.message}`);
+  }
+}
+
+async function runMergeJob(job, workingDir) {
+
   const { id, files, outputDir, outputName, transforms } = job;
 
   if (!Array.isArray(files) || files.length === 0) {
@@ -108,7 +127,9 @@ async function runMergeJob(job) {
 
   await new Promise((resolve, reject) => {
     const child = spawn(npxCmd, cliArgs, {
-      cwd: process.cwd(),
+
+      cwd: workingDir ?? process.cwd(),
+
       env: { ...process.env },
     });
 
@@ -139,14 +160,18 @@ async function runMergeJob(job) {
   sendToRenderer('merge-status', { jobId: id, status: 'success', outputPath });
 }
 
-async function runMergeQueue(jobs) {
+
+async function runMergeQueue(jobs, workingDir) {
+
   for (const job of jobs) {
     sendToRenderer('merge-status', { jobId: job.id, status: 'pending' });
   }
 
   for (const job of jobs) {
     try {
-      await runMergeJob(job);
+
+      await runMergeJob(job, workingDir);
+
     } catch (err) {
       sendToRenderer('merge-log', { jobId: job.id, type: 'err', text: err?.message ?? String(err) });
       sendToRenderer('merge-status', { jobId: job.id, status: 'failed' });
@@ -175,6 +200,28 @@ ipcMain.handle('pick-output-dir', async () => {
   return dir;
 });
 
+
+ipcMain.handle('pick-work-dir', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Choose working folder',
+    properties: ['openDirectory', 'createDirectory'],
+  });
+  const dir = result.canceled ? null : result.filePaths[0];
+  if (dir) {
+    store.set('workDir', dir);
+  }
+  return dir;
+});
+
+ipcMain.handle('clear-work-dir', async () => {
+  if (store.has('workDir')) {
+    store.delete('workDir');
+    return true;
+  }
+  return false;
+});
+
+
 ipcMain.handle('get-pref', async (_e, key, fallback) => {
   return store.get(key, fallback);
 });
@@ -192,11 +239,16 @@ ipcMain.handle('start-merge', async (_e, jobs) => {
     throw new Error('No jobs to merge.');
   }
 
+
+  const workingDir = resolveWorkingDirectory();
+
   mergeInProgress = true;
   sendToRenderer('merge-log', { jobId: null, type: 'info', text: `Starting ${jobs.length} merge job(s)...` });
+  sendToRenderer('merge-log', { jobId: null, type: 'info', text: `Using working folder: ${workingDir}` });
 
   try {
-    await runMergeQueue(jobs);
+    await runMergeQueue(jobs, workingDir);
+
     sendToRenderer('merge-log', { jobId: null, type: 'info', text: 'All merge jobs finished.' });
     return { ok: true };
   } catch (err) {

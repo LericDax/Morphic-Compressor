@@ -7,8 +7,14 @@ const clearLogBtn = $('#clearLogBtn');
 const addJobBtn = $('#addJobBtn');
 const mergeAllBtn = $('#mergeAllBtn');
 
+const workingDirDisplay = $('#workingDirDisplay');
+const chooseWorkingDirBtn = $('#chooseWorkingDirBtn');
+const clearWorkingDirBtn = $('#clearWorkingDirBtn');
+
 let jobIdCounter = 1;
 let jobs = [];
+let workingDir = null;
+
 
 function makeJob(partial = {}) {
   return {
@@ -213,6 +219,36 @@ function log(message, type = 'info', jobId = null) {
   logEl.dataset.lastType = type;
 }
 
+function updateWorkingDirDisplay() {
+  if (!workingDirDisplay) return;
+  if (!workingDir) {
+    workingDirDisplay.textContent = 'Using app directory';
+    workingDirDisplay.title = 'The app directory will be used as the working folder.';
+  } else {
+    workingDirDisplay.textContent = workingDir;
+    workingDirDisplay.title = workingDir;
+  }
+}
+
+async function selectWorkingDir() {
+  const dir = await window.glbMerger.pickWorkDir();
+  if (dir) {
+    workingDir = dir;
+    updateWorkingDirDisplay();
+    log(`Working folder set to ${dir}`);
+  }
+}
+
+async function resetWorkingDir() {
+  const changed = await window.glbMerger.clearWorkDir();
+  workingDir = null;
+  updateWorkingDirDisplay();
+  if (changed) {
+    log('Working folder reset to the app directory.');
+  }
+}
+
+
 function jobIndex(jobId) {
   const idx = jobs.findIndex((j) => j.id === jobId);
   return idx >= 0 ? idx + 1 : null;
@@ -318,6 +354,15 @@ function setupUi() {
   clearLogBtn.addEventListener('click', () => {
     logEl.textContent = '';
   });
+
+
+  if (chooseWorkingDirBtn) {
+    chooseWorkingDirBtn.addEventListener('click', selectWorkingDir);
+  }
+  if (clearWorkingDirBtn) {
+    clearWorkingDirBtn.addEventListener('click', resetWorkingDir);
+  }
+
 }
 
 function init() {
@@ -326,6 +371,10 @@ function init() {
 
   (async () => {
     const lastOutputDir = await window.glbMerger.getPref('lastOutputDir', null);
+
+    workingDir = await window.glbMerger.getPref('workDir', null);
+    updateWorkingDirDisplay();
+
     jobs.push(makeJob({ outputDir: lastOutputDir }));
     renderJobs();
   })();

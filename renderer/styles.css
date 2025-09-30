@@ -63,6 +63,39 @@ body::before {
   gap: 12px;
 }
 
+
+.workspace-bar {
+  margin: 0 32px 20px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.workspace-text h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.workspace-path {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.workspace-actions {
+  display: flex;
+  gap: 10px;
+}
+
+
 button {
   border: none;
   border-radius: var(--radius);
