@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GLB Animation Merger</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="title-group">
+        <h1>GLB Animation Merger</h1>
+        <p class="subtitle">
+          Merge identical GLB rigs and collect all unique animations into a single output.
+        </p>
+      </div>
+      <div class="header-actions">
+        <button id="addJobBtn" class="primary">Add Merge Job</button>
+        <button id="mergeAllBtn" class="accent">Merge All Jobs</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="jobsContainer" class="jobs"></section>
+      <aside class="log-panel">
+        <div class="log-header">
+          <h2>Activity Log</h2>
+          <button id="clearLogBtn" class="ghost">Clear</button>
+        </div>
+        <pre id="log" class="log-output" aria-live="polite"></pre>
+      </aside>
+    </main>
+
+    <template id="jobTemplate">
+      <article class="job">
+        <header class="job-header">
+          <div>
+            <h2 class="job-title"></h2>
+            <span class="job-status">Idle</span>
+          </div>
+          <div class="job-actions">
+            <button class="ghost" data-action="duplicate">Duplicate</button>
+            <button class="ghost" data-action="remove">Remove</button>
+          </div>
+        </header>
+        <div class="job-body">
+          <div class="job-row">
+            <label>Files</label>
+            <div class="file-list" data-role="files"></div>
+            <div class="button-row">
+              <button class="secondary" data-action="add-files">Add Files</button>
+              <button class="ghost" data-action="clear-files">Clear</button>
+            </div>
+          </div>
+          <div class="job-row">
+            <label>Output Folder</label>
+            <div class="output-path" data-role="output-dir">Not set</div>
+            <button class="secondary" data-action="choose-output">Choose…</button>
+          </div>
+          <div class="job-row">
+            <label for="outputName">Output Filename</label>
+            <input class="text" data-role="output-name" placeholder="merged.glb" />
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <script type="module" src="renderer.js"></script>
+  </body>
+</html>
