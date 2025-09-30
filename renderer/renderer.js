@@ -231,20 +231,37 @@ function updateWorkingDirDisplay() {
 }
 
 async function selectWorkingDir() {
-  const dir = await window.glbMerger.pickWorkDir();
-  if (dir) {
-    workingDir = dir;
-    updateWorkingDirDisplay();
-    log(`Working folder set to ${dir}`);
+
+  try {
+    const dir = await window.glbMerger.pickWorkDir();
+    if (dir) {
+      workingDir = dir;
+      updateWorkingDirDisplay();
+      log(`Working folder set to ${dir}`);
+    } else {
+      log('Working folder selection canceled.');
+    }
+  } catch (error) {
+    const message = error?.message ?? String(error);
+    log(`Failed to choose working folder: ${message}`, 'error');
+
   }
 }
 
 async function resetWorkingDir() {
-  const changed = await window.glbMerger.clearWorkDir();
-  workingDir = null;
-  updateWorkingDirDisplay();
-  if (changed) {
-    log('Working folder reset to the app directory.');
+
+  try {
+    const changed = await window.glbMerger.clearWorkDir();
+    workingDir = null;
+    updateWorkingDirDisplay();
+    if (changed) {
+      log('Working folder reset to the app directory.');
+    } else {
+      log('Working folder was already using the app directory.');
+    }
+  } catch (error) {
+    const message = error?.message ?? String(error);
+    log(`Failed to reset working folder: ${message}`, 'error');
   }
 }
 

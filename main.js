@@ -9,6 +9,22 @@ const store = new Store({ name: 'settings' });
 let mainWindow;
 let mergeInProgress = false;
 
+
+function getDialogParent() {
+  const focused = BrowserWindow.getFocusedWindow();
+  if (focused && !focused.isDestroyed()) {
+    return focused;
+  }
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    return mainWindow;
+  }
+
+  const [firstAvailable] = BrowserWindow.getAllWindows().filter((win) => !win.isDestroyed());
+  return firstAvailable ?? null;
+}
+
+
 function resolveRendererPath() {
   return path.join(process.cwd(), 'renderer', 'index.html');
 }
@@ -180,7 +196,10 @@ async function runMergeQueue(jobs, workingDir) {
 }
 
 ipcMain.handle('pick-files', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
+
+  const browserWindow = getDialogParent();
+  const result = await dialog.showOpenDialog(browserWindow ?? undefined, {
+
     title: 'Pick one or more .glb files',
     filters: [{ name: 'GLB', extensions: ['glb'] }],
     properties: ['openFile', 'multiSelections'],
@@ -189,8 +208,12 @@ ipcMain.handle('pick-files', async () => {
 });
 
 ipcMain.handle('pick-output-dir', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
+
+  const browserWindow = getDialogParent();
+  const result = await dialog.showOpenDialog(browserWindow ?? undefined, {
     title: 'Choose output folder',
+    defaultPath: store.get('lastOutputDir', undefined),
+
     properties: ['openDirectory', 'createDirectory'],
   });
   const dir = result.canceled ? null : result.filePaths[0];
@@ -202,8 +225,11 @@ ipcMain.handle('pick-output-dir', async () => {
 
 
 ipcMain.handle('pick-work-dir', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
+  const browserWindow = getDialogParent();
+  const result = await dialog.showOpenDialog(browserWindow ?? undefined, {
     title: 'Choose working folder',
+    defaultPath: store.get('workDir', process.cwd()),
+
     properties: ['openDirectory', 'createDirectory'],
   });
   const dir = result.canceled ? null : result.filePaths[0];
