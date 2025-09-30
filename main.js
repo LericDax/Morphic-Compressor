@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import Store from 'electron-store';
@@ -37,9 +38,7 @@ async function createWindow() {
     minWidth: 880,
     minHeight: 600,
     webPreferences: {
-
-      preload: path.join(app.getAppPath(), 'preload.js'),
-
+      preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)),
       nodeIntegration: false,
       contextIsolation: true,
     },
