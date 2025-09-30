@@ -192,22 +192,32 @@ function renderJobs() {
 }
 
 async function pickFilesForJob(job) {
-  const selections = await window.glbMerger.pickFiles();
-  if (!selections || selections.length === 0) {
-    return;
+  try {
+    const selections = await window.glbMerger.pickFiles();
+    if (!selections || selections.length === 0) {
+      return;
+    }
+    uniqueAppend(job.files, selections);
+    job.status = 'Idle';
+    renderJobs();
+  } catch (error) {
+    const message = error?.message ?? String(error);
+    log(`Failed to pick files: ${message}`, 'error', job.id);
   }
-  uniqueAppend(job.files, selections);
-  job.status = 'Idle';
-  renderJobs();
 }
 
 async function chooseOutputDir(job) {
-  const dir = await window.glbMerger.pickOutputDir();
-  if (dir) {
-    job.outputDir = dir;
-    await window.glbMerger.setPref('lastOutputDir', dir);
-    job.status = 'Idle';
-    renderJobs();
+  try {
+    const dir = await window.glbMerger.pickOutputDir();
+    if (dir) {
+      job.outputDir = dir;
+      await window.glbMerger.setPref('lastOutputDir', dir);
+      job.status = 'Idle';
+      renderJobs();
+    }
+  } catch (error) {
+    const message = error?.message ?? String(error);
+    log(`Failed to choose output directory: ${message}`, 'error', job.id);
   }
 }
 
@@ -231,7 +241,6 @@ function updateWorkingDirDisplay() {
 }
 
 async function selectWorkingDir() {
-
   try {
     const dir = await window.glbMerger.pickWorkDir();
     if (dir) {
@@ -244,7 +253,6 @@ async function selectWorkingDir() {
   } catch (error) {
     const message = error?.message ?? String(error);
     log(`Failed to choose working folder: ${message}`, 'error');
-
   }
 }
 
