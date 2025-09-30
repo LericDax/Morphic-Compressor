@@ -63,6 +63,7 @@ body::before {
   gap: 12px;
 }
 
+
 .workspace-bar {
   margin: 0 32px 20px;
   background: var(--panel-bg);

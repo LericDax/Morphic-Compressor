@@ -6,6 +6,7 @@ const logEl = $('#log');
 const clearLogBtn = $('#clearLogBtn');
 const addJobBtn = $('#addJobBtn');
 const mergeAllBtn = $('#mergeAllBtn');
+
 const workingDirDisplay = $('#workingDirDisplay');
 const chooseWorkingDirBtn = $('#chooseWorkingDirBtn');
 const clearWorkingDirBtn = $('#clearWorkingDirBtn');
@@ -13,6 +14,7 @@ const clearWorkingDirBtn = $('#clearWorkingDirBtn');
 let jobIdCounter = 1;
 let jobs = [];
 let workingDir = null;
+
 
 function makeJob(partial = {}) {
   return {
@@ -229,6 +231,7 @@ function updateWorkingDirDisplay() {
 }
 
 async function selectWorkingDir() {
+
   try {
     const dir = await window.glbMerger.pickWorkDir();
     if (dir) {
@@ -241,10 +244,12 @@ async function selectWorkingDir() {
   } catch (error) {
     const message = error?.message ?? String(error);
     log(`Failed to choose working folder: ${message}`, 'error');
+
   }
 }
 
 async function resetWorkingDir() {
+
   try {
     const changed = await window.glbMerger.clearWorkDir();
     workingDir = null;
@@ -259,6 +264,7 @@ async function resetWorkingDir() {
     log(`Failed to reset working folder: ${message}`, 'error');
   }
 }
+
 
 function jobIndex(jobId) {
   const idx = jobs.findIndex((j) => j.id === jobId);
@@ -366,12 +372,15 @@ function setupUi() {
     logEl.textContent = '';
   });
 
+
+
   if (chooseWorkingDirBtn) {
     chooseWorkingDirBtn.addEventListener('click', selectWorkingDir);
   }
   if (clearWorkingDirBtn) {
     clearWorkingDirBtn.addEventListener('click', resetWorkingDir);
   }
+
 }
 
 function init() {
@@ -382,6 +391,7 @@ function init() {
     const lastOutputDir = await window.glbMerger.getPref('lastOutputDir', null);
     workingDir = await window.glbMerger.getPref('workDir', null);
     updateWorkingDirDisplay();
+
     jobs.push(makeJob({ outputDir: lastOutputDir }));
     renderJobs();
   })();

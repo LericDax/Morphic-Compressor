@@ -9,6 +9,7 @@ const store = new Store({ name: 'settings' });
 let mainWindow;
 let mergeInProgress = false;
 
+
 function getDialogParent() {
   const focused = BrowserWindow.getFocusedWindow();
   if (focused && !focused.isDestroyed()) {
@@ -23,8 +24,10 @@ function getDialogParent() {
   return firstAvailable ?? null;
 }
 
+
 function resolveRendererPath() {
   return path.join(app.getAppPath(), 'renderer', 'index.html');
+
 }
 
 async function createWindow() {
@@ -34,7 +37,9 @@ async function createWindow() {
     minWidth: 880,
     minHeight: 600,
     webPreferences: {
+
       preload: path.join(app.getAppPath(), 'preload.js'),
+
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -78,6 +83,7 @@ function getNpxCommand() {
   return 'npx';
 }
 
+
 function resolveWorkingDirectory() {
   const configured = store.get('workDir', null);
   if (!configured) {
@@ -96,6 +102,7 @@ function resolveWorkingDirectory() {
 }
 
 async function runMergeJob(job, workingDir) {
+
   const { id, files, outputDir, outputName, transforms } = job;
 
   if (!Array.isArray(files) || files.length === 0) {
@@ -139,7 +146,9 @@ async function runMergeJob(job, workingDir) {
 
   await new Promise((resolve, reject) => {
     const child = spawn(npxCmd, cliArgs, {
+
       cwd: workingDir ?? process.cwd(),
+
       env: { ...process.env },
     });
 
@@ -170,14 +179,18 @@ async function runMergeJob(job, workingDir) {
   sendToRenderer('merge-status', { jobId: id, status: 'success', outputPath });
 }
 
+
 async function runMergeQueue(jobs, workingDir) {
+
   for (const job of jobs) {
     sendToRenderer('merge-status', { jobId: job.id, status: 'pending' });
   }
 
   for (const job of jobs) {
     try {
+
       await runMergeJob(job, workingDir);
+
     } catch (err) {
       sendToRenderer('merge-log', { jobId: job.id, type: 'err', text: err?.message ?? String(err) });
       sendToRenderer('merge-status', { jobId: job.id, status: 'failed' });
@@ -186,8 +199,10 @@ async function runMergeQueue(jobs, workingDir) {
 }
 
 ipcMain.handle('pick-files', async () => {
+
   const browserWindow = getDialogParent();
   const result = await dialog.showOpenDialog(browserWindow ?? undefined, {
+
     title: 'Pick one or more .glb files',
     filters: [{ name: 'GLB', extensions: ['glb'] }],
     properties: ['openFile', 'multiSelections'],
@@ -196,10 +211,12 @@ ipcMain.handle('pick-files', async () => {
 });
 
 ipcMain.handle('pick-output-dir', async () => {
+
   const browserWindow = getDialogParent();
   const result = await dialog.showOpenDialog(browserWindow ?? undefined, {
     title: 'Choose output folder',
     defaultPath: store.get('lastOutputDir', undefined),
+
     properties: ['openDirectory', 'createDirectory'],
   });
   const dir = result.canceled ? null : result.filePaths[0];
@@ -209,11 +226,13 @@ ipcMain.handle('pick-output-dir', async () => {
   return dir;
 });
 
+
 ipcMain.handle('pick-work-dir', async () => {
   const browserWindow = getDialogParent();
   const result = await dialog.showOpenDialog(browserWindow ?? undefined, {
     title: 'Choose working folder',
     defaultPath: store.get('workDir', process.cwd()),
+
     properties: ['openDirectory', 'createDirectory'],
   });
   const dir = result.canceled ? null : result.filePaths[0];
@@ -230,6 +249,7 @@ ipcMain.handle('clear-work-dir', async () => {
   }
   return false;
 });
+
 
 ipcMain.handle('get-pref', async (_e, key, fallback) => {
   return store.get(key, fallback);
@@ -256,6 +276,7 @@ ipcMain.handle('start-merge', async (_e, jobs) => {
 
   try {
     await runMergeQueue(jobs, workingDir);
+
     sendToRenderer('merge-log', { jobId: null, type: 'info', text: 'All merge jobs finished.' });
     return { ok: true };
   } catch (err) {
