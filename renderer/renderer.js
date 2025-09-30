@@ -11,9 +11,81 @@ const workingDirDisplay = $('#workingDirDisplay');
 const chooseWorkingDirBtn = $('#chooseWorkingDirBtn');
 const clearWorkingDirBtn = $('#clearWorkingDirBtn');
 
+const requiredGlbMergerMethods = [
+  'pickFiles',
+  'pickOutputDir',
+  'setPref',
+  'getPref',
+  'pickWorkDir',
+  'clearWorkDir',
+  'isMerging',
+  'startMerge',
+  'onMergeLog',
+  'onMergeStatus',
+];
+
+let glbMergerReady = false;
+
 let jobIdCounter = 1;
 let jobs = [];
 let workingDir = null;
+
+function disableInteractiveControls() {
+  [addJobBtn, mergeAllBtn, chooseWorkingDirBtn, clearWorkingDirBtn, clearLogBtn].forEach((btn) => {
+    if (btn) {
+      btn.disabled = true;
+    }
+  });
+}
+
+function showInitializationError(message, details = []) {
+  console.error('Failed to initialize GLB Merger renderer:', message, details);
+  disableInteractiveControls();
+
+  const banner = document.createElement('div');
+  banner.className = 'error-banner';
+  banner.setAttribute('role', 'alert');
+
+  const title = document.createElement('strong');
+  title.textContent = 'Unable to initialize the GLB Animation Merger UI.';
+  banner.appendChild(title);
+
+  const description = document.createElement('p');
+  description.textContent = message;
+  banner.appendChild(description);
+
+  if (details.length > 0) {
+    const list = document.createElement('ul');
+    details.forEach((item) => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      list.appendChild(li);
+    });
+    banner.appendChild(list);
+  }
+
+  document.body?.prepend(banner);
+}
+
+function verifyGlbMergerApi() {
+  const api = window?.glbMerger;
+  if (!api) {
+    showInitializationError('The preload bridge is unavailable. Ensure the application was started correctly.');
+    return false;
+  }
+
+  const missing = requiredGlbMergerMethods.filter((method) => typeof api[method] !== 'function');
+  if (missing.length > 0) {
+    showInitializationError(
+      'The preload bridge is missing required methods.',
+      missing.map((name) => `Missing window.glbMerger.${name}()`),
+    );
+    return false;
+  }
+
+  glbMergerReady = true;
+  return true;
+}
 
 
 function makeJob(partial = {}) {
@@ -192,6 +264,7 @@ function renderJobs() {
 }
 
 async function pickFilesForJob(job) {
+  if (!glbMergerReady) return;
   try {
     const selections = await window.glbMerger.pickFiles();
     if (!selections || selections.length === 0) {
@@ -207,6 +280,7 @@ async function pickFilesForJob(job) {
 }
 
 async function chooseOutputDir(job) {
+  if (!glbMergerReady) return;
   try {
     const dir = await window.glbMerger.pickOutputDir();
     if (dir) {
@@ -241,6 +315,7 @@ function updateWorkingDirDisplay() {
 }
 
 async function selectWorkingDir() {
+  if (!glbMergerReady) return;
   try {
     const dir = await window.glbMerger.pickWorkDir();
     if (dir) {
@@ -257,6 +332,7 @@ async function selectWorkingDir() {
 }
 
 async function resetWorkingDir() {
+  if (!glbMergerReady) return;
 
   try {
     const changed = await window.glbMerger.clearWorkDir();
@@ -280,6 +356,7 @@ function jobIndex(jobId) {
 }
 
 async function handleMergeAll() {
+  if (!glbMergerReady) return;
   if (await window.glbMerger.isMerging()) {
     log('A merge is already running. Please wait for it to finish.', 'warn');
     return;
@@ -352,6 +429,7 @@ function statusLabel(status) {
 }
 
 function setupLogListeners() {
+  if (!glbMergerReady) return;
   window.glbMerger.onMergeLog(({ jobId, type, text }) => {
     const lines = text.split(/\r?\n/).filter(Boolean);
     for (const line of lines) {
@@ -367,6 +445,7 @@ function setupLogListeners() {
 }
 
 function setupUi() {
+  if (!glbMergerReady) return;
   addJobBtn.addEventListener('click', async () => {
     const lastOutputDir = await window.glbMerger.getPref('lastOutputDir', null);
     const job = makeJob({ outputDir: lastOutputDir });
@@ -392,10 +471,16 @@ function setupUi() {
 }
 
 function init() {
+  if (!verifyGlbMergerApi()) {
+    renderJobs();
+    return;
+  }
+
   setupUi();
   setupLogListeners();
 
   (async () => {
+    if (!glbMergerReady) return;
     const lastOutputDir = await window.glbMerger.getPref('lastOutputDir', null);
     workingDir = await window.glbMerger.getPref('workDir', null);
     updateWorkingDirDisplay();

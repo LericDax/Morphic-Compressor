@@ -29,6 +29,31 @@ body {
   flex-direction: column;
 }
 
+.error-banner {
+  margin: 16px 32px 0;
+  border-radius: var(--radius);
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  background: rgba(254, 226, 226, 0.8);
+  color: var(--danger);
+  padding: 16px 20px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 24px rgba(220, 38, 38, 0.12);
+}
+
+.error-banner p {
+  margin: 8px 0 0;
+  color: inherit;
+}
+
+.error-banner ul {
+  margin: 12px 0 0 20px;
+  padding: 0;
+}
+
+.error-banner li {
+  margin: 4px 0;
+}
+
 body::before {
   content: '';
   position: fixed;
