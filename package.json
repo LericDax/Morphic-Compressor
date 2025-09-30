@@ -1,0 +1,20 @@
+{
+  "name": "glb-anim-merger",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Electron GUI to merge multiple GLB files into one with combined animations.",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "start": "electron .",
+    "build": "echo \"Use electron-builder or forge if you want installers\"",
+    "postinstall": "patch-package || true"
+  },
+  "dependencies": {
+    "@gltf-transform/cli": "^3.10.0",
+    "electron-store": "^9.0.0"
+  },
+  "devDependencies": {
+    "electron": "^31.3.0"
+  }
+}
